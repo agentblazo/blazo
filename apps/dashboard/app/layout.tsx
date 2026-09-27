@@ -22,6 +22,26 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <span className="text-xs uppercase tracking-widest text-slate-400">
                 agent observability
               </span>
+              <nav className="ml-auto flex items-center gap-1">
+                <Link
+                  href="/"
+                  className="rounded px-2 py-1 text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                >
+                  Runs
+                </Link>
+                <Link
+                  href="/errors"
+                  className="rounded px-2 py-1 text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                >
+                  Errors
+                </Link>
+                <Link
+                  href="/logs"
+                  className="rounded px-2 py-1 text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                >
+                  Logs
+                </Link>
+              </nav>
             </div>
           </header>
           <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>

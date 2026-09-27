@@ -6,13 +6,12 @@ export const dynamic = "force-dynamic";
 
 export default async function RunsPage() {
   let runs: Run[] = [];
-  let error: string | null = null;
 
   try {
     runs = await getRuns();
-  } catch (caught) {
-    error = caught instanceof Error ? caught.message : String(caught);
+  } catch {
+    runs = [];
   }
 
-  return <RunsView initialRuns={runs} initialError={error} />;
+  return <RunsView initialRuns={runs} />;
 }

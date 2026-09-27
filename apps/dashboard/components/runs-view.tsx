@@ -1,81 +1,28 @@
 "use client";
 
 import { StatusBadge } from "@/components/badges";
+import { LiveDot, useLiveResource } from "@/components/use-live-resource";
 import { formatCost, formatDateTime, formatDuration, formatTokens } from "@/lib/format";
 import type { Run } from "@blazo/types";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
-
-const STREAM_EVENTS = [
-  "run.started",
-  "span.completed",
-  "log.created",
-  "error.created",
-  "finding.created",
-  "run.completed",
-] as const;
 
 interface RunsViewProps {
   initialRuns: Run[];
-  initialError: string | null;
+}
+
+interface RunsResponse {
+  runs: Run[];
 }
 
 /** Runs list with live updates over SSE. */
-export function RunsView({ initialRuns, initialError }: RunsViewProps) {
-  const [runs, setRuns] = useState<Run[]>(initialRuns);
-  const [error, setError] = useState<string | null>(initialError);
-  const [connected, setConnected] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const load = useCallback(async () => {
-    try {
-      const response = await fetch("/api/runs?limit=100", { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error(`collector returned ${response.status}`);
-      }
-      const body = (await response.json()) as { runs: Run[] };
-      setRuns(body.runs);
-      setError(null);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught));
-    }
-  }, []);
-
-  useEffect(() => {
-    const source = new EventSource("/api/stream");
-    const schedule = () => {
-      if (timer.current) {
-        clearTimeout(timer.current);
-      }
-      timer.current = setTimeout(() => void load(), 200);
-    };
-    const onOpen = () => setConnected(true);
-    const onError = () => setConnected(false);
-
-    source.addEventListener("open", onOpen);
-    source.addEventListener("error", onError);
-    for (const name of STREAM_EVENTS) {
-      source.addEventListener(name, schedule);
-    }
-
-    return () => {
-      if (timer.current) {
-        clearTimeout(timer.current);
-      }
-      source.close();
-    };
-  }, [load]);
-
-  const indicator = (
-    <span className="inline-flex items-center gap-2 text-xs text-slate-400">
-      <span
-        className={`inline-block h-2 w-2 rounded-full ${
-          connected ? "animate-pulse bg-emerald-400" : "bg-slate-600"
-        }`}
-      />
-      {connected ? "live" : "connecting…"}
-    </span>
+export function RunsView({ initialRuns }: RunsViewProps) {
+  const { data, connected, error } = useLiveResource<RunsResponse>(
+    { runs: initialRuns },
+    "/api/runs?limit=100",
   );
+  const runs = data.runs;
+
+  const indicator = <LiveDot connected={connected} />;
 
   if (error && runs.length === 0) {
     return (

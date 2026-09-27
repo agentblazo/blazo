@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusBadge, TypeBadge, levelColor } from "@/components/badges";
+import { LiveDot } from "@/components/use-live-resource";
 import type { RunDetail } from "@/lib/api";
 import {
   formatClock,
@@ -30,7 +31,7 @@ const spanDuration = (span: Span): number =>
 
 /** Interactive run detail: hand-built timeline, step inspector, logs and errors. */
 export function RunDetailView({ detail, live }: { detail: RunDetail; live?: boolean }) {
-  const { run, spans, logs, errors } = detail;
+  const { run, spans, logs, errors, findings } = detail;
   const [selectedId, setSelectedId] = useState<string | null>(spans[0]?.id ?? null);
 
   const selected = useMemo(
@@ -56,14 +57,7 @@ export function RunDetailView({ detail, live }: { detail: RunDetail; live?: bool
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-semibold tracking-tight">{run.agent}</h1>
           <StatusBadge status={run.status} />
-          <span className="inline-flex items-center gap-2 text-xs text-slate-400">
-            <span
-              className={`inline-block h-2 w-2 rounded-full ${
-                live ? "animate-pulse bg-emerald-400" : "bg-slate-600"
-              }`}
-            />
-            {live ? "live" : "connecting…"}
-          </span>
+          <LiveDot connected={live ?? false} />
           <span className="font-mono text-xs text-slate-400">{run.id}</span>
         </div>
       </div>
@@ -75,6 +69,36 @@ export function RunDetailView({ detail, live }: { detail: RunDetail; live?: bool
         <Stat label="Tokens" value={formatTokens(run.tokens)} />
         <Stat label="Cost" value={formatCost(run.cost)} />
       </div>
+
+      {findings.length > 0 ? (
+        <div className="space-y-2">
+          {findings.map((finding) => (
+            <div
+              key={finding.id}
+              className={`flex items-start gap-3 rounded-lg border p-3 text-sm ${
+                finding.severity === "critical"
+                  ? "border-rose-900/60 bg-rose-950/20 text-rose-200"
+                  : finding.severity === "warning"
+                    ? "border-amber-900/60 bg-amber-950/20 text-amber-200"
+                    : "border-sky-900/60 bg-sky-950/20 text-sky-200"
+              }`}
+            >
+              <span
+                className={`mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider ${
+                  finding.severity === "critical"
+                    ? "bg-rose-500/20 text-rose-300"
+                    : finding.severity === "warning"
+                      ? "bg-amber-500/20 text-amber-300"
+                      : "bg-sky-500/20 text-sky-300"
+                }`}
+              >
+                {finding.type}
+              </span>
+              <span>{finding.message}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <div>
