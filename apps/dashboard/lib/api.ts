@@ -1,3 +1,4 @@
+import type { BlazoConfig } from "@blazo/config";
 import type { BlazoError, Finding, Log, Run, Span } from "@blazo/types";
 
 const COLLECTOR_URL = (
@@ -24,6 +25,33 @@ export interface ErrorGroup {
   firstAt: number;
   lastAt: number;
   runIds: string[];
+}
+
+/** Aggregate metrics from `GET /api/overview`. */
+export interface OverviewMetrics {
+  runs: {
+    total: number;
+    running: number;
+    success: number;
+    error: number;
+    successRate: number | null;
+  };
+  duration: { avg: number | null; max: number | null };
+  tokens: { total: number | null; avg: number | null };
+  cost: { total: number | null };
+  calls: { llm: number; tool: number };
+  errors: { total: number };
+  findings: { total: number; critical: number; warning: number };
+}
+
+/** Everything the overview page renders. */
+export interface Overview {
+  metrics: OverviewMetrics;
+  recentRuns: Run[];
+  activeRuns: Run[];
+  slowRuns: Run[];
+  recentFindings: Finding[];
+  topErrors: ErrorGroup[];
 }
 
 /** Fetch recent runs, newest first. */
@@ -71,3 +99,22 @@ export const getLogs = async (level?: string): Promise<Log[]> => {
 
 /** The configured collector base URL (exposed for error messages). */
 export const collectorUrl = COLLECTOR_URL;
+
+/** Fetch the overview payload. */
+export const getOverview = async (): Promise<Overview> => {
+  const response = await fetch(`${COLLECTOR_URL}/api/overview`, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`collector returned ${response.status}`);
+  }
+  return (await response.json()) as Overview;
+};
+
+/** Fetch the collector's effective config. */
+export const getConfig = async (): Promise<BlazoConfig> => {
+  const response = await fetch(`${COLLECTOR_URL}/api/config`, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error(`collector returned ${response.status}`);
+  }
+  const data = (await response.json()) as { config: BlazoConfig };
+  return data.config;
+};

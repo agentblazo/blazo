@@ -27,6 +27,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   href="/"
                   className="rounded px-2 py-1 text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
                 >
+                  Overview
+                </Link>
+                <Link
+                  href="/runs"
+                  className="rounded px-2 py-1 text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                >
                   Runs
                 </Link>
                 <Link
@@ -40,6 +46,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
                   className="rounded px-2 py-1 text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
                 >
                   Logs
+                </Link>
+                <Link
+                  href="/settings"
+                  className="rounded px-2 py-1 text-sm text-slate-300 hover:bg-slate-800 hover:text-slate-100"
+                >
+                  Settings
                 </Link>
               </nav>
             </div>

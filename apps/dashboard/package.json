@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@blazo/config": "workspace:*",
     "@blazo/types": "workspace:*",
     "next": "^16.3.6",
     "react": "^19.3.0",
