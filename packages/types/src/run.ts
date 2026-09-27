@@ -1,4 +1,4 @@
-/** Free-form JSON metadata attached to runs, spans, logs and errors. */
+/** Free-form JSON metadata attached to spans and logs. */
 export type Metadata = Record<string, unknown>;
 
 /** Lifecycle status of a run. */
@@ -17,5 +17,4 @@ export interface Run {
   duration: number | null;
   tokens: number | null;
   cost: number | null;
-  metadata: Metadata;
 }
