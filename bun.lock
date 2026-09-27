@@ -29,6 +29,7 @@
       "dependencies": {
         "@blazo/config": "workspace:*",
         "@blazo/database": "workspace:*",
+        "@blazo/detection": "workspace:*",
         "@blazo/types": "workspace:*",
         "drizzle-orm": "^0.38.0",
         "hono": "^4.13.9",
@@ -76,6 +77,13 @@
       },
       "devDependencies": {
         "drizzle-kit": "^0.30.0",
+      },
+    },
+    "packages/detection": {
+      "name": "@blazo/detection",
+      "version": "0.0.0",
+      "dependencies": {
+        "@blazo/types": "workspace:*",
       },
     },
     "packages/otel": {
@@ -141,6 +149,8 @@
     "@blazo/dashboard": ["@blazo/dashboard@workspace:apps/dashboard"],
 
     "@blazo/database": ["@blazo/database@workspace:packages/database"],
+
+    "@blazo/detection": ["@blazo/detection@workspace:packages/detection"],
 
     "@blazo/example-basic-agent": ["@blazo/example-basic-agent@workspace:examples/basic-agent"],
 
