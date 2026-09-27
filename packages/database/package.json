@@ -10,6 +10,7 @@
   },
   "types": "./src/index.ts",
   "scripts": {
+    "test": "bun test",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run src/migrate.ts"
