@@ -1,5 +1,7 @@
 import { type BlazoDb, errors, logs, runs, spans } from "@blazo/database";
+import type { BlazoError, Log, Run, Span } from "@blazo/types";
 import { desc, eq } from "drizzle-orm";
+import { type EventHub, streamEvents } from "./events";
 import type { NormalizedLogs, NormalizedTraces } from "./normalize";
 
 type RunInsert = typeof runs.$inferInsert;
@@ -19,7 +21,7 @@ export interface Repository {
 }
 
 /** Build a repository around an open Drizzle/SQLite connection. */
-export const createRepository = (database: BlazoDb): Repository => {
+export const createRepository = (database: BlazoDb, hub?: EventHub): Repository => {
   const { db } = database;
 
   const saveRun = (run: RunInsert): void => {
@@ -27,39 +29,51 @@ export const createRepository = (database: BlazoDb): Repository => {
 
     if (!existing) {
       db.insert(runs).values(run).onConflictDoNothing().run();
+      hub?.publish(streamEvents.runStarted(run as Run));
+      if (run.status !== "running") {
+        hub?.publish(streamEvents.runCompleted(run as Run));
+      }
       return;
     }
 
-    db.update(runs)
-      .set({
-        agent: run.agent !== "unknown-agent" ? run.agent : existing.agent,
-        // An errored run stays errored; a running placeholder never downgrades.
-        status:
-          existing.status === "error" || run.status === "error"
-            ? "error"
-            : run.status === "running"
-              ? existing.status
-              : run.status,
-        startedAt: Math.min(existing.startedAt, run.startedAt),
-        endedAt: run.endedAt ?? existing.endedAt,
-        duration: run.duration ?? existing.duration,
-        tokens: run.tokens ?? existing.tokens,
-        cost: run.cost ?? existing.cost,
-      })
-      .where(eq(runs.id, run.id))
-      .run();
+    const status: "running" | "success" | "error" =
+      existing.status === "error" || run.status === "error"
+        ? "error"
+        : run.status === "running"
+          ? existing.status
+          : (run.status ?? existing.status);
+
+    const merged = {
+      agent: run.agent !== "unknown-agent" ? run.agent : existing.agent,
+      status,
+      startedAt: Math.min(existing.startedAt, run.startedAt),
+      endedAt: run.endedAt ?? existing.endedAt,
+      duration: run.duration ?? existing.duration,
+      tokens: run.tokens ?? existing.tokens,
+      cost: run.cost ?? existing.cost,
+    };
+
+    db.update(runs).set(merged).where(eq(runs.id, run.id)).run();
+
+    // Publish completion when a run transitions out of `running` (or escalates).
+    if (status !== existing.status && status !== "running") {
+      hub?.publish(streamEvents.runCompleted({ ...existing, ...merged } as Run));
+    }
   };
 
   const saveSpan = (span: SpanInsert): void => {
     db.insert(spans).values(span).onConflictDoNothing().run();
+    hub?.publish(streamEvents.spanCompleted(span as unknown as Span));
   };
 
   const saveLog = (entry: LogInsert): void => {
     db.insert(logs).values(entry).onConflictDoNothing().run();
+    hub?.publish(streamEvents.logCreated(entry as unknown as Log));
   };
 
   const saveError = (entry: ErrorInsert): void => {
     db.insert(errors).values(entry).onConflictDoNothing().run();
+    hub?.publish(streamEvents.errorCreated(entry as BlazoError));
   };
 
   return {

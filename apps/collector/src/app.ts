@@ -1,5 +1,8 @@
+import type { StreamEvent } from "@blazo/types";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
+import { streamSSE } from "hono/streaming";
+import type { EventHub } from "./events";
 import { normalizeLogs, normalizeTraces } from "./normalize";
 import type { ExportLogsServiceRequest, ExportTraceServiceRequest } from "./otlp";
 import type { Repository } from "./repository";
@@ -17,8 +20,8 @@ const parseLimit = (raw: string | undefined): number => {
   return Math.min(Math.max(Math.trunc(value), 1), 500);
 };
 
-/** Create the collector Hono app backed by a repository. */
-export const createApp = (repository: Repository): Hono => {
+/** Create the collector Hono app backed by a repository and event hub. */
+export const createApp = (repository: Repository, hub: EventHub): Hono => {
   const app = new Hono();
 
   app.use("*", cors());
@@ -72,6 +75,43 @@ export const createApp = (repository: Repository): Hono => {
     }
     return c.json({ spans: repository.listSpans(id) });
   });
+
+  app.get("/api/stream", (c) =>
+    streamSSE(c, async (stream) => {
+      const queue: StreamEvent[] = [];
+      let wake: (() => void) | undefined;
+
+      const unsubscribe = hub.subscribe((event) => {
+        queue.push(event);
+        wake?.();
+        wake = undefined;
+      });
+      stream.onAbort(() => {
+        unsubscribe();
+        wake?.();
+        wake = undefined;
+      });
+
+      await stream.writeSSE({ event: "ready", data: JSON.stringify({ listener: "ok" }) });
+
+      while (!stream.aborted) {
+        if (queue.length === 0) {
+          await new Promise<void>((resolve) => {
+            wake = resolve;
+          });
+        }
+        while (queue.length > 0 && !stream.aborted) {
+          const event = queue.shift();
+          if (event) {
+            await stream.writeSSE({
+              event: event.type,
+              data: JSON.stringify(event.data),
+            });
+          }
+        }
+      }
+    }),
+  );
 
   return app;
 };
