@@ -39,7 +39,7 @@ const fetchPage = (url: string): Promise<string> =>
     "tool.fetch",
     async () => {
       await sleep(150);
-      throw new Error(`upstream 503 while fetching ${url}`);
+      throw new Error("upstream 503: service unavailable");
     },
     { type: "tool", attributes: { "tool.name": "fetch", "tool.input.url": url } },
   );
@@ -56,10 +56,14 @@ const main = async (): Promise<void> => {
       const results = await search("blazo observability");
       log("info", "search finished", { count: results.length });
 
-      try {
-        await fetchPage("https://example.com");
-      } catch (error) {
-        log("error", "tool call failed, continuing", { error: String(error) });
+      for (let attempt = 1; attempt <= 4; attempt += 1) {
+        try {
+          await fetchPage(`https://example.com?attempt=${attempt}`);
+        } catch (error) {
+          log("error", `tool call failed (attempt ${attempt}), continuing`, {
+            error: String(error),
+          });
+        }
       }
 
       const summary = await callLlm("Summarize the results", 256);
