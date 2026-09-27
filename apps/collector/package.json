@@ -12,6 +12,7 @@
   "dependencies": {
     "@blazo/config": "workspace:*",
     "@blazo/database": "workspace:*",
+    "@blazo/detection": "workspace:*",
     "@blazo/types": "workspace:*",
     "drizzle-orm": "^0.38.0",
     "hono": "^4.13.9"

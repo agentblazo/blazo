@@ -2,7 +2,9 @@ import type { StreamEvent } from "@blazo/types";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
+import type { Detector } from "./detector";
 import type { EventHub } from "./events";
+import { groupErrors } from "./group";
 import { normalizeLogs, normalizeTraces } from "./normalize";
 import type { ExportLogsServiceRequest, ExportTraceServiceRequest } from "./otlp";
 import type { Repository } from "./repository";
@@ -12,16 +14,16 @@ const readJson = async <T>(c: Context): Promise<T> => {
   return JSON.parse(text) as T;
 };
 
-const parseLimit = (raw: string | undefined): number => {
-  const value = Number(raw ?? "100");
+const parseLimit = (raw: string | undefined, fallback = 100): number => {
+  const value = Number(raw ?? String(fallback));
   if (!Number.isFinite(value)) {
-    return 100;
+    return fallback;
   }
   return Math.min(Math.max(Math.trunc(value), 1), 500);
 };
 
-/** Create the collector Hono app backed by a repository and event hub. */
-export const createApp = (repository: Repository, hub: EventHub): Hono => {
+/** Create the collector Hono app backed by a repository, event hub and detector. */
+export const createApp = (repository: Repository, hub: EventHub, detector: Detector): Hono => {
   const app = new Hono();
 
   app.use("*", cors());
@@ -31,7 +33,10 @@ export const createApp = (repository: Repository, hub: EventHub): Hono => {
   app.post("/v1/traces", async (c) => {
     try {
       const payload = await readJson<ExportTraceServiceRequest>(c);
-      repository.saveTraces(normalizeTraces(payload));
+      const affected = repository.saveTraces(normalizeTraces(payload));
+      for (const runId of affected) {
+        detector.runFor(runId);
+      }
       return c.json({ partialSuccess: {} });
     } catch (error) {
       console.error("failed to ingest traces", error);
@@ -42,7 +47,10 @@ export const createApp = (repository: Repository, hub: EventHub): Hono => {
   app.post("/v1/logs", async (c) => {
     try {
       const payload = await readJson<ExportLogsServiceRequest>(c);
-      repository.saveLogs(normalizeLogs(payload));
+      const affected = repository.saveLogs(normalizeLogs(payload));
+      for (const runId of affected) {
+        detector.runFor(runId);
+      }
       return c.json({ partialSuccess: {} });
     } catch (error) {
       console.error("failed to ingest logs", error);
@@ -65,6 +73,7 @@ export const createApp = (repository: Repository, hub: EventHub): Hono => {
       spans: repository.listSpans(run.id),
       logs: repository.listLogs(run.id),
       errors: repository.listErrors(run.id),
+      findings: repository.listFindings(run.id),
     });
   });
 
@@ -74,6 +83,21 @@ export const createApp = (repository: Repository, hub: EventHub): Hono => {
       return c.json({ error: "run not found" }, 404);
     }
     return c.json({ spans: repository.listSpans(id) });
+  });
+
+  app.get("/api/errors", (c) => {
+    const limit = parseLimit(c.req.query("limit"), 500);
+    return c.json({ groups: groupErrors(repository.listAllErrors(limit)) });
+  });
+
+  app.get("/api/logs", (c) => {
+    const limit = parseLimit(c.req.query("limit"), 200);
+    return c.json({ logs: repository.listAllLogs(c.req.query("level"), limit) });
+  });
+
+  app.get("/api/findings", (c) => {
+    const limit = parseLimit(c.req.query("limit"), 200);
+    return c.json({ findings: repository.listAllFindings(limit) });
   });
 
   app.get("/api/stream", (c) =>
