@@ -1,0 +1,19 @@
+{
+  "name": "@blazo/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Blazo CLI: init, watch, runs and inspect.",
+  "bin": {
+    "blazo": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "bun src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@blazo/config": "workspace:*",
+    "@blazo/types": "workspace:*",
+    "cac": "^7.0.0"
+  }
+}
