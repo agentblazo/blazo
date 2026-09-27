@@ -1,0 +1,15 @@
+{
+  "name": "@blazo/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Blazo end-to-end tests (Playwright).",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^26.0.0"
+  }
+}

@@ -24,6 +24,10 @@ build/
 *.log
 npm-debug.log*
 
+# Test artifacts
+test-results/
+playwright-report/
+
 # OS / editor
 .DS_Store
 .idea/
