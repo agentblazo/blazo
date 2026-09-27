@@ -1,0 +1,19 @@
+{
+  "name": "@blazo/collector",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Blazo collector: OTLP/HTTP ingest, normalization and read APIs.",
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@blazo/config": "workspace:*",
+    "@blazo/database": "workspace:*",
+    "@blazo/types": "workspace:*",
+    "drizzle-orm": "^0.38.0",
+    "hono": "^4.13.9"
+  }
+}
