@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Build output
+dist/
+build/
+.next/
+.turbo/
+
+# Database
+.blazo/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Env
+.env
+.env.*
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,33 @@
+name: blazo
+
+services:
+  collector:
+    build:
+      context: ..
+      dockerfile: apps/collector/Dockerfile
+    ports:
+      - "4318:4318"
+    volumes:
+      - blazo-data:/data
+    environment:
+      BLAZO_DB_PATH: /data/blazo.db
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4318/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: apps/dashboard/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      BLAZO_COLLECTOR_URL: http://collector:4318
+    depends_on:
+      collector:
+        condition: service_healthy
+
+volumes:
+  blazo-data:

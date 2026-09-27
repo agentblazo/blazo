@@ -1,0 +1,26 @@
+{
+  "name": "blazo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "bun@1.4.2",
+  "description": "Open-source observability for AI agents.",
+  "workspaces": ["apps/*", "packages/*", "examples/*"],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "db:generate": "turbo run db:generate",
+    "db:migrate": "turbo run db:migrate"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/bun": "^1.4.2",
+    "turbo": "^2.5.0",
+    "typescript": "^5.7.0"
+  }
+}
