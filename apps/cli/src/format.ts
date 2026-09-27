@@ -1,4 +1,4 @@
-import type { BlazoError, Log, Run, Span } from "@blazo/types";
+import type { BlazoError, Finding, Log, Run, Span } from "@blazo/types";
 
 const ESC = "\x1b[";
 const RESET = `${ESC}0m`;
@@ -26,6 +26,7 @@ export interface RunDetail {
   spans: Span[];
   logs: Log[];
   errors: BlazoError[];
+  findings: Finding[];
 }
 
 /** Truncate a string to `width` visible characters. */
@@ -109,7 +110,7 @@ export const renderRunsTable = (runs: Run[], limit = 20): string => {
 
 /** Render a full run report for the terminal. */
 export const renderRunDetail = (detail: RunDetail): string => {
-  const { run, spans, logs, errors } = detail;
+  const { run, spans, logs, errors, findings } = detail;
   const out: string[] = [];
 
   out.push(
@@ -160,6 +161,22 @@ export const renderRunDetail = (detail: RunDetail): string => {
         const frames = error.stack.split("\n").slice(0, 3);
         out.push(color.gray(frames.map((frame) => `      ${frame}`).join("\n")));
       }
+    }
+  }
+
+  out.push("");
+  out.push(color.bold(`FINDINGS (${findings.length})`));
+  if (findings.length === 0) {
+    out.push(color.gray("  no findings"));
+  } else {
+    for (const finding of findings) {
+      const severity =
+        finding.severity === "critical"
+          ? color.red
+          : finding.severity === "warning"
+            ? color.yellow
+            : color.gray;
+      out.push(`  ${severity(finding.type)}  ${finding.message}`);
     }
   }
 
