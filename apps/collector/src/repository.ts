@@ -1,6 +1,6 @@
 import { type BlazoDb, errors, findings, logs, runs, spans } from "@blazo/database";
 import type { BlazoError, Finding, Log, Run, Span } from "@blazo/types";
-import { desc, eq } from "drizzle-orm";
+import { avg, count, desc, eq, isNotNull, max, sum } from "drizzle-orm";
 import { type EventHub, streamEvents } from "./events";
 import type { NormalizedLogs, NormalizedTraces } from "./normalize";
 
@@ -18,6 +18,23 @@ export interface RunSnapshot {
   errors: BlazoError[];
 }
 
+/** Aggregate metrics for the overview page. */
+export interface Metrics {
+  runs: {
+    total: number;
+    running: number;
+    success: number;
+    error: number;
+    successRate: number | null;
+  };
+  duration: { avg: number | null; max: number | null };
+  tokens: { total: number | null; avg: number | null };
+  cost: { total: number | null };
+  calls: { llm: number; tool: number };
+  errors: { total: number };
+  findings: { total: number; critical: number; warning: number };
+}
+
 /** Data-access layer used by the collector HTTP handlers. */
 export interface Repository {
   saveTraces: (input: NormalizedTraces) => string[];
@@ -31,9 +48,11 @@ export interface Repository {
   listErrors: (runId: string) => (typeof errors.$inferSelect)[];
   listFindings: (runId: string) => (typeof findings.$inferSelect)[];
   listRunningRuns: () => (typeof runs.$inferSelect)[];
+  listSlowRuns: (limit: number) => (typeof runs.$inferSelect)[];
   listAllErrors: (limit: number) => BlazoError[];
   listAllLogs: (level: string | undefined, limit: number) => Log[];
   listAllFindings: (limit: number) => (typeof findings.$inferSelect)[];
+  getMetrics: () => Metrics;
 }
 
 const LEVELS = ["trace", "debug", "info", "warn", "error", "fatal"] as const;
@@ -182,6 +201,15 @@ export const createRepository = (database: BlazoDb, hub?: EventHub): Repository 
     listRunningRuns() {
       return db.select().from(runs).where(eq(runs.status, "running")).all();
     },
+    listSlowRuns(limit) {
+      return db
+        .select()
+        .from(runs)
+        .where(isNotNull(runs.duration))
+        .orderBy(desc(runs.duration))
+        .limit(limit)
+        .all();
+    },
     listAllErrors(limit) {
       return db
         .select()
@@ -200,6 +228,61 @@ export const createRepository = (database: BlazoDb, hub?: EventHub): Repository 
     },
     listAllFindings(limit) {
       return db.select().from(findings).orderBy(desc(findings.createdAt)).limit(limit).all();
+    },
+    getMetrics() {
+      const num = (value: string | number | null | undefined): number | null =>
+        value === null || value === undefined ? null : Number(value);
+
+      const runCount = (status?: "running" | "success" | "error") => {
+        const query = db.select({ c: count() }).from(runs);
+        return (status ? query.where(eq(runs.status, status)) : query).get()?.c ?? 0;
+      };
+      const total = runCount();
+      const success = runCount("success");
+      const error = runCount("error");
+      const running = runCount("running");
+
+      const duration = db
+        .select({ avg: avg(runs.duration), max: max(runs.duration) })
+        .from(runs)
+        .get();
+      const tokens = db
+        .select({ total: sum(runs.tokens), avg: avg(runs.tokens) })
+        .from(runs)
+        .get();
+      const cost = db
+        .select({ total: sum(runs.cost) })
+        .from(runs)
+        .get();
+      const llm = db.select({ c: count() }).from(spans).where(eq(spans.type, "llm")).get()?.c ?? 0;
+      const tool =
+        db.select({ c: count() }).from(spans).where(eq(spans.type, "tool")).get()?.c ?? 0;
+      const errorTotal = db.select({ c: count() }).from(errors).get()?.c ?? 0;
+      const findingTotal = db.select({ c: count() }).from(findings).get()?.c ?? 0;
+      const critical =
+        db.select({ c: count() }).from(findings).where(eq(findings.severity, "critical")).get()
+          ?.c ?? 0;
+      const warning =
+        db.select({ c: count() }).from(findings).where(eq(findings.severity, "warning")).get()?.c ??
+        0;
+
+      const completed = success + error;
+
+      return {
+        runs: {
+          total,
+          running,
+          success,
+          error,
+          successRate: completed === 0 ? null : (success / completed) * 100,
+        },
+        duration: { avg: num(duration?.avg), max: num(duration?.max) },
+        tokens: { total: num(tokens?.total), avg: num(tokens?.avg) },
+        cost: { total: num(cost?.total) },
+        calls: { llm, tool },
+        errors: { total: errorTotal },
+        findings: { total: findingTotal, critical, warning },
+      };
     },
   };
 };

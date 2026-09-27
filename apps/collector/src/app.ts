@@ -1,3 +1,4 @@
+import type { BlazoConfig } from "@blazo/config";
 import type { StreamEvent } from "@blazo/types";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
@@ -23,12 +24,30 @@ const parseLimit = (raw: string | undefined, fallback = 100): number => {
 };
 
 /** Create the collector Hono app backed by a repository, event hub and detector. */
-export const createApp = (repository: Repository, hub: EventHub, detector: Detector): Hono => {
+export const createApp = (
+  repository: Repository,
+  hub: EventHub,
+  detector: Detector,
+  config: BlazoConfig,
+): Hono => {
   const app = new Hono();
 
   app.use("*", cors());
 
   app.get("/health", (c) => c.json({ status: "ok", service: "blazo-collector" }));
+
+  app.get("/api/config", (c) => c.json({ config }));
+
+  app.get("/api/overview", (c) =>
+    c.json({
+      metrics: repository.getMetrics(),
+      recentRuns: repository.listRuns(10),
+      activeRuns: repository.listRunningRuns(),
+      slowRuns: repository.listSlowRuns(5),
+      recentFindings: repository.listAllFindings(10),
+      topErrors: groupErrors(repository.listAllErrors(200)).slice(0, 10),
+    }),
+  );
 
   app.post("/v1/traces", async (c) => {
     try {

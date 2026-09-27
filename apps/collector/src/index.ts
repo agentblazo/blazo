@@ -18,15 +18,18 @@ runMigrations(database);
 const hub = createEventHub();
 const repository = createRepository(database, hub);
 const detector = createDetector(repository, config.detection);
-const app = createApp(repository, hub, detector);
+const app = createApp(repository, hub, detector, config);
 
 const sweepMs = Number(process.env.BLAZO_SWEEP_MS ?? "5000");
 const sweep = setInterval(() => detector.sweep(), sweepMs);
 sweep.unref?.();
 
+const port = Number(process.env.BLAZO_COLLECTOR_PORT ?? config.collector.port);
+const hostname = process.env.BLAZO_COLLECTOR_HOST ?? config.collector.host;
+
 const server = Bun.serve({
-  hostname: config.collector.host,
-  port: config.collector.port,
+  hostname,
+  port,
   fetch: app.fetch,
 });
 
