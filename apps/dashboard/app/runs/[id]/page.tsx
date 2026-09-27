@@ -1,4 +1,4 @@
-import { RunDetailView } from "@/components/run-detail-view";
+import { RunLive } from "@/components/run-live";
 import { getRun } from "@/lib/api";
 import { notFound } from "next/navigation";
 
@@ -12,5 +12,5 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
     notFound();
   }
 
-  return <RunDetailView detail={detail} />;
+  return <RunLive initial={detail} />;
 }

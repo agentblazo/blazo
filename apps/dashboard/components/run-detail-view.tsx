@@ -29,7 +29,7 @@ const spanDuration = (span: Span): number =>
   span.endedAt === null ? 0 : (span.duration ?? span.endedAt - span.startedAt);
 
 /** Interactive run detail: hand-built timeline, step inspector, logs and errors. */
-export function RunDetailView({ detail }: { detail: RunDetail }) {
+export function RunDetailView({ detail, live }: { detail: RunDetail; live?: boolean }) {
   const { run, spans, logs, errors } = detail;
   const [selectedId, setSelectedId] = useState<string | null>(spans[0]?.id ?? null);
 
@@ -56,6 +56,14 @@ export function RunDetailView({ detail }: { detail: RunDetail }) {
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-semibold tracking-tight">{run.agent}</h1>
           <StatusBadge status={run.status} />
+          <span className="inline-flex items-center gap-2 text-xs text-slate-400">
+            <span
+              className={`inline-block h-2 w-2 rounded-full ${
+                live ? "animate-pulse bg-emerald-400" : "bg-slate-600"
+              }`}
+            />
+            {live ? "live" : "connecting…"}
+          </span>
           <span className="font-mono text-xs text-slate-400">{run.id}</span>
         </div>
       </div>
