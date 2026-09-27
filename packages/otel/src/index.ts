@@ -3,8 +3,18 @@ import { type Logger, logs } from "@opentelemetry/api-logs";
 import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
-import { BatchLogRecordProcessor, LoggerProvider } from "@opentelemetry/sdk-logs";
-import { BatchSpanProcessor, NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
+import {
+  BatchLogRecordProcessor,
+  LoggerProvider,
+  SimpleLogRecordProcessor,
+} from "@opentelemetry/sdk-logs";
+import type { LogRecordExporter } from "@opentelemetry/sdk-logs";
+import {
+  BatchSpanProcessor,
+  NodeTracerProvider,
+  SimpleSpanProcessor,
+} from "@opentelemetry/sdk-trace-node";
+import type { SpanExporter } from "@opentelemetry/sdk-trace-node";
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
 
 /** Attribute key used by Blazo to type a span (llm|tool|agent|error|session). */
@@ -26,6 +36,10 @@ export interface TelemetryOptions {
   headers?: Record<string, string>;
   /** Extra resource attributes merged into the telemetry resource. */
   attributes?: Record<string, string | number | boolean>;
+  /** Override the span exporter (used by tests). */
+  traceExporter?: SpanExporter;
+  /** Override the log exporter (used by tests). */
+  logExporter?: LogRecordExporter;
 }
 
 let tracerProvider: NodeTracerProvider | undefined;
@@ -58,10 +72,12 @@ export const setupTelemetry = (options: TelemetryOptions = {}): void => {
   tracerProvider = new NodeTracerProvider({
     resource,
     spanProcessors: [
-      new BatchSpanProcessor(
-        new OTLPTraceExporter({ url: `${endpoint}/v1/traces`, headers: options.headers }),
-        { scheduledDelayMillis: 500 },
-      ),
+      options.traceExporter
+        ? new SimpleSpanProcessor(options.traceExporter)
+        : new BatchSpanProcessor(
+            new OTLPTraceExporter({ url: `${endpoint}/v1/traces`, headers: options.headers }),
+            { scheduledDelayMillis: 500 },
+          ),
     ],
   });
   tracerProvider.register();
@@ -69,10 +85,12 @@ export const setupTelemetry = (options: TelemetryOptions = {}): void => {
   loggerProvider = new LoggerProvider({
     resource,
     processors: [
-      new BatchLogRecordProcessor({
-        exporter: new OTLPLogExporter({ url: `${endpoint}/v1/logs`, headers: options.headers }),
-        scheduledDelayMillis: 500,
-      }),
+      options.logExporter
+        ? new SimpleLogRecordProcessor({ exporter: options.logExporter })
+        : new BatchLogRecordProcessor({
+            exporter: new OTLPLogExporter({ url: `${endpoint}/v1/logs`, headers: options.headers }),
+            scheduledDelayMillis: 500,
+          }),
     ],
   });
   logs.setGlobalLoggerProvider(loggerProvider);
