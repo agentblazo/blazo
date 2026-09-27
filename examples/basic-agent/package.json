@@ -1,0 +1,15 @@
+{
+  "name": "@blazo/example-basic-agent",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fake agent emitting llm/tool spans, logs and errors to Blazo.",
+  "scripts": {
+    "start": "bun src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@blazo/sdk": "workspace:*"
+  }
+}
