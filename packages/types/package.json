@@ -1,0 +1,14 @@
+{
+  "name": "@blazo/types",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Blazo domain contracts.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}
