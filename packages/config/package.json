@@ -1,0 +1,17 @@
+{
+  "name": "@blazo/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Blazo config load/write with Zod validation.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  }
+}
