@@ -15,8 +15,22 @@ const SEVERITY: Record<LogLevel, SeverityNumber> = {
 /**
  * Emit a structured log line linked to the active span (and therefore run).
  *
+ * @remarks
+ * Uses the currently active OpenTelemetry context to attach the record to a
+ * span. When called outside {@link observe}, the log still exports but has no
+ * run association.
+ *
+ * @param level - Severity level (`trace` | `debug` | `info` | `warn` | `error` | `fatal`).
+ * @param message - Human-readable log message.
+ * @param metadata - Structured attributes stored alongside the log.
+ *
  * @example
- * log("info", "agent started", { model: "gpt-4o" })
+ * import { observe, log } from "@blazo/sdk";
+ *
+ * await observe("research-agent", async () => {
+ *   log("info", "agent started", { model: "gpt-4o" });
+ *   log("error", "tool failed", { tool: "search" });
+ * });
  */
 export const log = (level: LogLevel, message: string, metadata: Metadata = {}): void => {
   getLogger("blazo").emit({

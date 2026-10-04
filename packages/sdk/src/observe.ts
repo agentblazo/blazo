@@ -4,7 +4,10 @@ import { type Attributes, SpanKind, SpanStatusCode } from "@opentelemetry/api";
 
 /** Options for {@link observe}. */
 export interface ObserveOptions {
-  /** Span type recorded on the run. Defaults to `agent`. */
+  /**
+   * Span type recorded on the run.
+   * @defaultValue `"agent"`
+   */
   type?: SpanType;
   /** Extra attributes attached to the root span. */
   attributes?: Attributes;
@@ -14,8 +17,28 @@ export interface ObserveOptions {
  * Wrap an agent entry point in a root span. The resulting span becomes a
  * Blazo run once it is exported to the collector.
  *
+ * @remarks
+ * Sets the `blazo.run` marker on the span, records the agent name, and sets the
+ * span status to `success` or `error`. On failure the exception is recorded on
+ * the span and re-thrown to the caller.
+ *
+ * @typeParam T - Return type of `fn`.
+ * @param name - Run (and root span) name, e.g. `"research-agent"`.
+ * @param fn - The agent function to run. May be synchronous or async.
+ * @param options - Optional span type and extra attributes.
+ * @returns The value returned by `fn`.
+ * @throws Rethrows any error thrown by `fn` after recording it on the span.
+ *
  * @example
- * await observe("research-agent", async () => { await agent.run() })
+ * import { observe, log, span, shutdown } from "@blazo/sdk";
+ *
+ * const answer = await observe("research-agent", async () => {
+ *   log("info", "agent started", { version: "0.1.0" });
+ *   await span("llm.chat", () => callModel(prompt), { type: "llm" });
+ *   return "done";
+ * });
+ *
+ * await shutdown();
  */
 export const observe = async <T>(
   name: string,
