@@ -30,7 +30,7 @@ Install it, run an agent, and immediately watch its execution live — locally, 
 
 ## Why Blazo
 
-Blazo observes AI agents end-to-end and helps a developer understand what actually happened. It answers "why is my agent slow, stuck, or failing?" from real telemetry — not from a prompt playground.
+Blazo observes AI agents end-to-end and helps a developer understand what actually happened. It answers "why is my agent slow, stuck, or failing?" from real telemetry — not from a prompt playgro[...]
 
 It is an **observability product** — deliberately **not** an agent builder, playground, or evaluation platform.
 
@@ -50,7 +50,7 @@ flowchart LR
   DB --> U
 ```
 
-The root span from `observe(name, fn)` becomes a **Run**; child spans become timeline events. The collector normalizes telemetry on ingest, runs deterministic detection rules, and pushes updates over SSE — no Redis, no cloud.
+The root span from `observe(name, fn)` becomes a **Run**; child spans become timeline events. The collector normalizes telemetry on ingest, runs deterministic detection rules, and pushes updates o[...]
 
 ---
 
@@ -345,7 +345,27 @@ bun run lint && bun run typecheck && bun run test
 
 ## License
 
-Open source — see the repository. A `LICENSE` file has not been added yet.
+This project is licensed under the [MIT License](LICENSE).
+
+Copyright (c) 2026 agentblazo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 
 <div align="center">
 <sub>Blazo · Product: <b>AgentBlazo</b> · <a href="https://github.com/agentblazo/blazo">github.com/agentblazo/blazo</a></sub>
