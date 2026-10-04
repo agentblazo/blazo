@@ -2,6 +2,7 @@
   "name": "blazo",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "packageManager": "bun@1.4.2",
   "description": "Open-source observability for AI agents.",
