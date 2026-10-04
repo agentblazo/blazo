@@ -1,7 +1,13 @@
 import type { Finding, FindingSeverity, FindingType } from "@blazo/types";
 import type { DetectionInput, FindingThresholds } from "./types";
 
-/** A rule inspects a run snapshot and returns zero or more findings. */
+/**
+ * A rule inspects a run snapshot and returns zero or more findings.
+ *
+ * @param input - The run snapshot to inspect.
+ * @param thresholds - Threshold values that drive the rule.
+ * @returns Findings produced by the rule (possibly empty).
+ */
 export type DetectionRule = (input: DetectionInput, thresholds: FindingThresholds) => Finding[];
 
 const formatDuration = (ms: number): string =>
@@ -32,7 +38,13 @@ const makeFinding = (
   createdAt,
 });
 
-/** `long_running` — duration (or elapsed time) exceeds the threshold. */
+/**
+ * `long_running` — duration (or elapsed time) exceeds the threshold.
+ *
+ * @param input - Run snapshot; a still-running run uses `now - startedAt`.
+ * @param thresholds - Uses `longRunningMs`; severity becomes `critical` at 2x.
+ * @returns A single finding when exceeded, otherwise `[]`.
+ */
 export const longRunningRule: DetectionRule = (input, thresholds) => {
   const { run, now } = input;
   const duration = run.duration ?? (run.status === "running" ? now - run.startedAt : null);
@@ -51,7 +63,13 @@ export const longRunningRule: DetectionRule = (input, thresholds) => {
   return [makeFinding(run.id, "long_running", severity, message, now)];
 };
 
-/** `repeated_tool` — the same tool is called more than the threshold. */
+/**
+ * `repeated_tool` — the same tool is called more than the threshold.
+ *
+ * @param input - Run snapshot; only spans with `type === "tool"` are counted.
+ * @param thresholds - Uses `repeatedToolCount`; severity becomes `critical` at 2x.
+ * @returns One finding per over-called tool, sorted by tool name.
+ */
 export const repeatedToolRule: DetectionRule = (input, thresholds) => {
   const counts = new Map<string, number>();
   for (const span of input.spans) {
@@ -83,7 +101,13 @@ export const repeatedToolRule: DetectionRule = (input, thresholds) => {
   return findings;
 };
 
-/** `repeated_error` — the same error message raised more than the threshold. */
+/**
+ * `repeated_error` — the same error message raised more than the threshold.
+ *
+ * @param input - Run snapshot; errors are grouped by `type: message`.
+ * @param thresholds - Uses `repeatedErrorCount`.
+ * @returns One `critical` finding per repeated error signature.
+ */
 export const repeatedErrorRule: DetectionRule = (input, thresholds) => {
   const counts = new Map<string, number>();
   for (const error of input.errors) {
@@ -112,7 +136,14 @@ export const repeatedErrorRule: DetectionRule = (input, thresholds) => {
   return findings;
 };
 
-/** `no_activity` — a running run has been silent for longer than the threshold. */
+/**
+ * `no_activity` — a running run has been silent for longer than the threshold.
+ *
+ * @param input - Run snapshot; finished runs are never flagged.
+ * @param thresholds - Uses `noActivityMs`; activity is the latest span end,
+ * span start or log timestamp.
+ * @returns A `warning` finding when idle, otherwise `[]`.
+ */
 export const noActivityRule: DetectionRule = (input, thresholds) => {
   const { run, now } = input;
   if (run.status !== "running") {
@@ -143,7 +174,14 @@ export const noActivityRule: DetectionRule = (input, thresholds) => {
   ];
 };
 
-/** `possible_loop` — consecutive repeats or a repeating tool pattern. */
+/**
+ * `possible_loop` — consecutive repeats or a repeating tool pattern.
+ *
+ * @param input - Run snapshot; tool spans are ordered by `startedAt`.
+ * @param thresholds - Uses `loopRepeatCount` for consecutive repeats; trailing
+ * 2- and 3-tool cycles are also detected.
+ * @returns A `critical` finding per detected loop.
+ */
 export const possibleLoopRule: DetectionRule = (input, thresholds) => {
   const names = input.spans
     .filter((span) => span.type === "tool")
@@ -208,7 +246,13 @@ export const possibleLoopRule: DetectionRule = (input, thresholds) => {
   return findings;
 };
 
-/** Every rule, in application order. */
+/**
+ * Every rule, in application order.
+ *
+ * @remarks
+ * Order is significant only for the order of the resulting findings; each rule
+ * is independent.
+ */
 export const DETECTION_RULES: DetectionRule[] = [
   longRunningRule,
   repeatedToolRule,
