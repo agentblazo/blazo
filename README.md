@@ -7,7 +7,7 @@
 Install it, run an agent, and immediately watch its execution live — locally, in real time, no account.
 
 [![Status](https://img.shields.io/badge/status-MVP-blue?style=flat-square)](https://github.com/agentblazo/blazo/releases)
-[![License](https://img.shields.io/github/license/agentblazo/blazo?style=flat-square)](#license)
+[![License](https://img.shields.io/github/license/agentblazo/blazo?style=flat-square&v=2)](#license)
 [![Stars](https://img.shields.io/github/stars/agentblazo/blazo?style=flat-square)](https://github.com/agentblazo/blazo/stargazers)
 [![Issues](https://img.shields.io/github/issues/agentblazo/blazo?style=flat-square)](https://github.com/agentblazo/blazo/issues)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/agentblazo/blazo/pulls)
